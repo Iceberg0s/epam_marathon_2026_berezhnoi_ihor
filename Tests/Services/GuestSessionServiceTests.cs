@@ -806,7 +806,57 @@ public class GuestSessionServiceTests
         Assert.Equal(OrderStatus.SubmittedByCustomer, order.Status);
         Assert.Equal(GroupReservationStatus.Submitted, groupReservation.Status);
     }
+    [Theory]
+    [AutoData]
+    public async Task DeleteGuestSessionAsync_Level3_RemovesSessionAndReturnsUpdatedSnapshot(
+        string ownerUserId,
+        GroupReservation groupReservation,
+        Reservation reservation,
+        GuestSession sessionToDelete,
+        GuestSession remainingSession,
+        Dish dish)
+    {
+        reservation.CustomerId = ownerUserId;
+        groupReservation.ReservationId = reservation.Id;
+        sessionToDelete.GroupReservationId = groupReservation.GroupReservationId;
+        remainingSession.GroupReservationId = groupReservation.GroupReservationId;
+        remainingSession.IsOwnerSession = false;
+        dish.Price = 220;
+        remainingSession.Dishes = [new OrderItem { DishId = dish.Id, Quantity = 1 }];
 
+        _mockGroupReservationRepository.Setup(r => r.GetGroupReservationByIdAsync(groupReservation.GroupReservationId)).ReturnsAsync(groupReservation);
+        _mockReservationRepository.Setup(r => r.GetReservationByIdAsync(reservation.Id)).ReturnsAsync(reservation);
+        _mockGuestSessionRepository.Setup(r => r.GetByGuestSessionId(sessionToDelete.Id)).ReturnsAsync(sessionToDelete);
+        _mockGuestSessionRepository.Setup(r => r.GetAllByGroupReservationIdAsync(groupReservation.GroupReservationId)).ReturnsAsync([remainingSession]);
+        _mockDishRepository.Setup(r => r.GetDishesByIdsAsync(It.IsAny<IEnumerable<string>>())).ReturnsAsync([dish]);
+
+        var snapshot = await _guestSessionService.DeleteGuestSessionAsync(ownerUserId, groupReservation.GroupReservationId, sessionToDelete.Id);
+        var participantsList = snapshot.Participants.ToList();
+
+        _mockGuestSessionRepository.Verify(r => r.DeleteAsync(sessionToDelete), Times.Once);
+        Assert.Single(participantsList);
+        Assert.Equal(220, snapshot.Total);
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task DeleteGuestSessionAsync_Level3_SessionBelongsToAnotherGroup_ThrowsValidationException(
+        string ownerUserId,
+        GroupReservation groupReservation,
+        Reservation reservation,
+        GuestSession foreignSession)
+    {
+        reservation.CustomerId = ownerUserId;
+        groupReservation.ReservationId = reservation.Id;
+        foreignSession.GroupReservationId = "different-group-id";
+
+        _mockGroupReservationRepository.Setup(r => r.GetGroupReservationByIdAsync(groupReservation.GroupReservationId)).ReturnsAsync(groupReservation);
+        _mockReservationRepository.Setup(r => r.GetReservationByIdAsync(reservation.Id)).ReturnsAsync(reservation);
+        _mockGuestSessionRepository.Setup(r => r.GetByGuestSessionId(foreignSession.Id)).ReturnsAsync(foreignSession);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            _guestSessionService.DeleteGuestSessionAsync(ownerUserId, groupReservation.GroupReservationId, foreignSession.Id));
+    }
     public static TheoryData<IEnumerable<string>, IEnumerable<Dish>, List<OrderItem>, decimal> PepareDishesForGuestSession()
     {
         var dishMap = new Dictionary<string, Dish>()
