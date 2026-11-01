@@ -573,6 +573,54 @@ public class GuestSessionServiceTests
     }
 
     [Theory]
+    [AutoData]
+    public async Task GetGroupSessionsAsync_Level1_ReturnsParticipantsAndTotal(
+        string ownerUserId,
+        GroupReservation groupReservation,
+        Reservation reservation,
+        Dish dish1,
+        Dish dish2)
+    {
+        reservation.CustomerId = ownerUserId;
+        groupReservation.ReservationId = reservation.Id;
+        dish1.Price = 180;
+        dish2.Price = 220;
+
+        var sessions = new List<GuestSession>
+        {
+            new()
+            {
+                Id = "session1",
+                GroupReservationId = groupReservation.GroupReservationId,
+                GuestName = "Andrii",
+                IsSubmitted = true,
+                Dishes = [new OrderItem { DishId = dish1.Id, Quantity = 2 }]
+            },
+            new()
+            {
+                Id = "session2",
+                GroupReservationId = groupReservation.GroupReservationId,
+                GuestName = "Olena",
+                IsSubmitted = false,
+                Dishes = [new OrderItem { DishId = dish2.Id, Quantity = 1 }]
+            }
+        };
+
+        _mockGroupReservationRepository.Setup(r => r.GetGroupReservationByIdAsync(groupReservation.GroupReservationId)).ReturnsAsync(groupReservation);
+        _mockReservationRepository.Setup(r => r.GetReservationByIdAsync(reservation.Id)).ReturnsAsync(reservation);
+        _mockGuestSessionRepository.Setup(r => r.GetAllByGroupReservationIdAsync(groupReservation.GroupReservationId)).ReturnsAsync(sessions);
+        _mockDishRepository.Setup(r => r.GetDishesByIdsAsync(It.IsAny<IEnumerable<string>>())).ReturnsAsync([dish1, dish2]);
+
+        var response = await _guestSessionService.GetGroupSessionsAsync(ownerUserId, groupReservation.GroupReservationId);
+        var participantsList = response.Participants.ToList();
+
+        Assert.Equal(2, participantsList.Count);
+        Assert.Equal(360, participantsList[0].Total);
+        Assert.Equal(220, participantsList[1].Total);
+        Assert.Equal(580, response.Total);
+    }
+
+    [Theory]
     [InlineAutoData(DishState.OutOfStock)]
     [InlineAutoData(DishState.OnStop)]
     public async Task SubmitCartAsync_DishNotAvailable_ThrowsDishNotAvailable(DishState state, Dish dish, GuestSession guestSession, GroupReservation groupReservation)
