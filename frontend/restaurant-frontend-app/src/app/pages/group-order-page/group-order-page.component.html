@@ -2,9 +2,7 @@
   @if (isLoading()) {
     <p>Loading…</p>
   } @else if (errorStatus() === 404) {
-    <div class="error-state">
-      <p>Group reservation not found</p>
-    </div>
+    <div class="error-state"><p>Group reservation not found</p></div>
   } @else if (errorStatus() !== null) {
     <div class="error-state">
       <p>Something went wrong</p>
@@ -27,10 +25,19 @@
       }
     </header>
 
+    <div class="sync-controls">
+      @if (syncError()) {
+        <span class="sync-error">Couldn't refresh. Showing data from {{ updatedAt() | date: 'HH:mm:ss' }}</span>
+      } @else {
+        <span>Updated at {{ updatedAt() | date: 'HH:mm:ss' }}</span>
+      }
+      @if (!isSubmittedStatus()) {
+        <button type="button" (click)="forceRefresh()">Refresh</button>
+      }
+    </div>
+
     @if (unsubmittedWarning()) {
-      <div class="warning-banner" role="status">
-        {{ unsubmittedWarning() }}
-      </div>
+      <div class="warning-banner" role="status">{{ unsubmittedWarning() }}</div>
     }
 
     @if (!hasAnyDishes()) {
@@ -55,7 +62,7 @@
           @for (item of consolidated().items; track item.dish.id) {
             <li>
               <span>{{ item.dish.name }} × {{ item.quantity }}</span>
-              <span>{{ item.subtotal | currency: 'USD': 'symbol': '1.2-2' }}</span>
+              <span>{{ item.dish.price * item.quantity | currency: 'USD': 'symbol': '1.2-2' }}</span>
             </li>
           }
         </ul>
@@ -67,14 +74,8 @@
         <span>Grand Total</span>
         <strong>{{ grandTotal() | currency: 'USD': 'symbol': '1.2-2' }}</strong>
       </div>
-
       @if (!isSubmittedStatus()) {
-        <button
-          type="button"
-          class="submit-btn"
-          [disabled]="!canSubmit()"
-          (click)="openConfirmModal()"
-        >
+        <button type="button" class="submit-btn" [disabled]="!canSubmit()" (click)="openConfirmModal()">
           Submit Pre-Order
         </button>
       }
@@ -87,11 +88,7 @@
           <p>Are you sure you want to submit the consolidated pre-order to the restaurant?</p>
           <div class="modal-actions">
             <button type="button" (click)="closeConfirmModal()">Cancel</button>
-            <button
-              type="button"
-              [disabled]="isSubmitting()"
-              (click)="confirmSubmit()"
-            >
+            <button type="button" [disabled]="isSubmitting()" (click)="confirmSubmit()">
               {{ isSubmitting() ? 'Submitting…' : 'Submit' }}
             </button>
           </div>
