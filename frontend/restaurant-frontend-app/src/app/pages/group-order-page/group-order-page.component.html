@@ -1,30 +1,102 @@
 <main class="page">
-  <header class="page__header">
-    <div class="page__title-row">
-      <h1>Group Pre-Order</h1>
-      <span class="badge">Collecting pre-orders</span>
+  @if (isLoading()) {
+    <p>Loading…</p>
+  } @else if (errorStatus() === 404) {
+    <div class="error-state">
+      <p>Group reservation not found</p>
     </div>
-
-    <div class="page__meta">
-      <span>{{ invite().LocationAddress }}</span>
-      <span>{{ invite().StartTime | date: 'MMM d, y': 'UTC' }}</span>
-      <span>
-        {{ invite().StartTime | date: 'HH:mm': 'UTC' }} - {{ invite().EndTime | date: 'HH:mm': 'UTC' }}
-      </span>
-      <span>{{ guestsCountText() }}</span>
+  } @else if (errorStatus() !== null) {
+    <div class="error-state">
+      <p>Something went wrong</p>
+      <button type="button" (click)="loadData()">Try again</button>
     </div>
-  </header>
+  } @else {
+    <header class="page__header">
+      <div class="page__title-row">
+        <h1>Group Pre-Order</h1>
+        <span class="badge">{{ statusBadgeText() }}</span>
+      </div>
 
-  <ul class="participants">
-    @for (person of participants(); track person.id) {
-      <li><app-participant-card [participant]="person" /></li>
+      @if (invite(); as inv) {
+        <div class="page__meta">
+          <span>{{ inv.LocationAddress }}</span>
+          <span>{{ inv.StartTime | date: 'MMM d, y': 'UTC' }}</span>
+          <span>{{ inv.StartTime | date: 'HH:mm': 'UTC' }} - {{ inv.EndTime | date: 'HH:mm': 'UTC' }}</span>
+          <span>{{ participants().length }} of {{ inv.MaxGuestCount }} guests</span>
+        </div>
+      }
+    </header>
+
+    @if (unsubmittedWarning()) {
+      <div class="warning-banner" role="status">
+        {{ unsubmittedWarning() }}
+      </div>
     }
-  </ul>
 
-  <footer class="page__footer">
-    <div class="grand-total">
-      <span>Grand Total</span>
-      <strong>{{ total() | currency: 'USD': 'symbol': '1.2-2' }}</strong>
-    </div>
-  </footer>
+    @if (!hasAnyDishes()) {
+      <p class="empty-state">Participants haven't added any dishes yet</p>
+    } @else {
+      <ul class="participants">
+        @for (person of participants(); track person.id) {
+          <li>
+            <app-participant-card
+              [participant]="person"
+              [isMe]="person.id === ownerSessionId()"
+            />
+          </li>
+        }
+      </ul>
+    }
+
+    @if (consolidated().items.length > 0) {
+      <section class="consolidated">
+        <h2>Consolidated pre-order</h2>
+        <ul>
+          @for (item of consolidated().items; track item.dish.id) {
+            <li>
+              <span>{{ item.dish.name }} × {{ item.quantity }}</span>
+              <span>{{ item.subtotal | currency: 'USD': 'symbol': '1.2-2' }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <footer class="page__footer">
+      <div class="grand-total">
+        <span>Grand Total</span>
+        <strong>{{ grandTotal() | currency: 'USD': 'symbol': '1.2-2' }}</strong>
+      </div>
+
+      @if (!isSubmittedStatus()) {
+        <button
+          type="button"
+          class="submit-btn"
+          [disabled]="!canSubmit()"
+          (click)="openConfirmModal()"
+        >
+          Submit Pre-Order
+        </button>
+      }
+    </footer>
+
+    @if (isConfirmModalOpen()) {
+      <app-modal (closeModal)="closeConfirmModal()">
+        <div role="dialog" aria-modal="true">
+          <h2>Confirm Pre-Order</h2>
+          <p>Are you sure you want to submit the consolidated pre-order to the restaurant?</p>
+          <div class="modal-actions">
+            <button type="button" (click)="closeConfirmModal()">Cancel</button>
+            <button
+              type="button"
+              [disabled]="isSubmitting()"
+              (click)="confirmSubmit()"
+            >
+              {{ isSubmitting() ? 'Submitting…' : 'Submit' }}
+            </button>
+          </div>
+        </div>
+      </app-modal>
+    }
+  }
 </main>
