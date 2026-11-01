@@ -1,9 +1,30 @@
 <main class="page">
-  <h1>Group Pre-Order</h1>
+  <header class="page__header">
+    <div class="page__title-row">
+      <h1>Group Pre-Order</h1>
+      <span class="badge">Collecting pre-orders</span>
+    </div>
+
+    <div class="page__meta">
+      <span>{{ invite().LocationAddress }}</span>
+      <span>{{ invite().StartTime | date: 'MMM d, y': 'UTC' }}</span>
+      <span>
+        {{ invite().StartTime | date: 'HH:mm': 'UTC' }} - {{ invite().EndTime | date: 'HH:mm': 'UTC' }}
+      </span>
+      <span>{{ guestsCountText() }}</span>
+    </div>
+  </header>
 
   <ul class="participants">
     @for (person of participants(); track person.id) {
       <li><app-participant-card [participant]="person" /></li>
     }
   </ul>
+
+  <footer class="page__footer">
+    <div class="grand-total">
+      <span>Grand Total</span>
+      <strong>{{ total() | currency: 'USD': 'symbol': '1.2-2' }}</strong>
+    </div>
+  </footer>
 </main>
