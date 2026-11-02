@@ -44,3 +44,25 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+
+# .NET / C# Lambda builds
+bin/
+obj/
+
+# Syndicate artifacts & logs
+.syndicate-config-*/bundles/
+.syndicate-config-*/logs/
+sdct_aliases.yml
