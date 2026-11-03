@@ -44,10 +44,13 @@ interface WaiterPreOrderNavigationData {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CardReservationComponent {
+  navigateToGroupOrder(reservationId: string): void {
+  void this.router.navigate(['/reservations', reservationId, 'group-order']);
+}
   private readonly router = inject(Router);
   readonly Roles = Roles;
   readonly ReservationStatusCustomer = ReservationStatusCustomer;
-
+  
   readonly r = input.required<ReservationCustomer>();
   readonly role = input<string>(Roles.CUSTOMER);
   readonly statusEnum =
