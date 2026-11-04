@@ -97,4 +97,3 @@ cd aqa\restaurant-aqa-framework
 dotnet test --logger "html;LogFileName=test-report.html" --results-directory .\TestResults
 ```
 
-Звіти й результати тестування зберігаються у `TestResults/` і не мають потрапляти до коміту.
