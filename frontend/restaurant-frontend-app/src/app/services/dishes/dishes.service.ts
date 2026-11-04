@@ -13,6 +13,12 @@ export class DishesService {
     return this.http.get<DishListResponse[]>(`${this.baseUrl}/dishes/popular`);
   }
 
+  getDishesForReservation(reservationId: string): Observable<DishListResponse[]> {
+    return this.http.get<DishListResponse[]>(
+      `${this.baseUrl}/reservations/${encodeURIComponent(reservationId)}/dishes`
+    );
+  }
+
   // /dishes
   // /dishes?dishType=MainCourse&sortBy=PriceDescending&name=Spaghetti
   getDishes(dishType?: string, sortBy?: string, name?: string): Observable<DishListResponse[]> {

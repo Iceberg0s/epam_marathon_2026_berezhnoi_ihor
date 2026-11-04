@@ -6,8 +6,6 @@ namespace APIHandler.Repositories.GuestSessions;
 
 public interface IGuestSessionRepository
 {
-    Task<int> CountByGroupReservationId(string groupReservationId);
-
     Task<GuestSession?> GetByGroupReservationId(string groupReservationId);
 
     Task<GuestSession?> GetByGuestSessionId(string id);

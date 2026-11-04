@@ -67,6 +67,17 @@ describe('Рівень 2 · сторінка Owner Review', () => {
       expect(service.getSessions$.calls.mostRecent().args[0]).toBe('grp-1');
     });
 
+    it('створює owner session до завантаження snapshot', () => {
+      const ownerSessionId$ = new Subject<string>();
+      service.getOwnerSessionId$.and.returnValue(ownerSessionId$);
+      create();
+
+      expect(service.getSessions$).not.toHaveBeenCalled();
+
+      ownerSessionId$.next('owner');
+      expect(service.getSessions$).toHaveBeenCalledWith('grp-1');
+    });
+
     it('показує всіх учасників; власна картка — «My Pre-Order»', () => {
       const { element } = create();
       expect(element.querySelectorAll('app-participant-card').length).toBe(3);

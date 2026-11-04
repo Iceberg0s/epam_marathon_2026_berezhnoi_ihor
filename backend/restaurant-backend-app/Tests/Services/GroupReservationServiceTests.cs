@@ -3,7 +3,6 @@ using APIHandler.Entities;
 using APIHandler.Exceptions;
 using APIHandler.Models.GroupReservation;
 using APIHandler.Repositories.GroupReservations;
-using APIHandler.Repositories.GuestSessions;
 using APIHandler.Repositories.Reservations;
 using APIHandler.Repositories.Tables;
 using APIHandler.Services.Auth;
@@ -19,7 +18,6 @@ public class GroupReservationServiceTests
     private readonly Mock<IGroupReservationRepository> _groupReservationRepositoryMock = new();
     private readonly Mock<ITableRepository> _tableRepositoryMock = new();
     private readonly Mock<IReservationRepository> _reservationRepositoryMock = new();
-    private readonly Mock<IGuestSessionRepository> _guestSessionRepositoryMock = new();
     private readonly Mock<IUserService> _userServiceMock = new();
     private readonly Mock<ILocationService> _locationServiceMock = new();
 
@@ -31,7 +29,6 @@ public class GroupReservationServiceTests
             _groupReservationRepositoryMock.Object,
             _tableRepositoryMock.Object,
             _reservationRepositoryMock.Object,
-            _guestSessionRepositoryMock.Object,
             _userServiceMock.Object,
             _locationServiceMock.Object);
     }
@@ -58,10 +55,6 @@ public class GroupReservationServiceTests
             .Setup(r => r.GetReservationByIdAsync(reservation.Id))
             .ReturnsAsync(reservation);
 
-        _guestSessionRepositoryMock
-            .Setup(r => r.CountByGroupReservationId(groupReservation.GroupReservationId))
-            .ReturnsAsync(0);
-
         _tableRepositoryMock
             .Setup(r => r.GetTableAsync(table.Id))
             .ReturnsAsync(table);
@@ -77,6 +70,7 @@ public class GroupReservationServiceTests
         var result = await _service.GetGroupReservationByTokenAsync(groupReservation.ReservationToken);
 
         Assert.Equal(groupReservation.GroupReservationId, result.GroupReservationId);
+        Assert.Equal(reservation.Id, result.ReservationId);
         Assert.Equal(table.LocationId, result.LocationId);
         Assert.Equal(reservation.GuestCount, result.MaxGuestCount);
         Assert.Equal(reservation.StartTime, result.StartTime);
@@ -116,10 +110,15 @@ public class GroupReservationServiceTests
 
     [Theory]
     [AutoData]
-    public async Task GetGroupReservationByTokenAsync_WhenGuestCountIsMax_ThrowsGuestLimitExceeded(GroupReservation groupReservation, Reservation reservation)
+    public async Task GetGroupReservationByTokenAsync_WhenGuestCapacityIsFull_StillReturnsReservationDetails(
+        GroupReservation groupReservation,
+        Reservation reservation,
+        Table table)
     {
         groupReservation.Status = GroupReservationStatus.Open;
         groupReservation.ReservationId = reservation.Id;
+        reservation.GuestCount = 2;
+        reservation.TableId = table.Id;
 
         _groupReservationRepositoryMock
             .Setup(r => r.GetGroupReservationByTokenAsync(groupReservation.ReservationToken))
@@ -129,11 +128,18 @@ public class GroupReservationServiceTests
             .Setup(r => r.GetReservationByIdAsync(reservation.Id))
             .ReturnsAsync(reservation);
 
-        _guestSessionRepositoryMock
-            .Setup(r => r.CountByGroupReservationId(groupReservation.GroupReservationId))
-            .ReturnsAsync(reservation.GuestCount);
+        _tableRepositoryMock
+            .Setup(r => r.GetTableAsync(table.Id))
+            .ReturnsAsync(table);
 
-        await Assert.ThrowsAsync<GuestLimitExceededException>(() => _service.GetGroupReservationByTokenAsync(groupReservation.ReservationToken));
+        _userServiceMock
+            .Setup(s => s.GetUserName(reservation.CustomerId!))
+            .ReturnsAsync("Owner");
+
+        var result = await _service.GetGroupReservationByTokenAsync(groupReservation.ReservationToken);
+
+        Assert.Equal(groupReservation.GroupReservationId, result.GroupReservationId);
+        Assert.Equal(2, result.MaxGuestCount);
     }
 
     [Theory]

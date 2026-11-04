@@ -25,7 +25,7 @@ public class GetGroupSessionsHandler(IGuestSessionService guestSessionService) :
         try
         {
             var snapshot = await guestSessionService.GetGroupSessionsAsync(userId, groupReservationId);
-            return ResponseBuilder.CreateSuccessResponse(snapshot);
+            return ResponseBuilder.CreateJsonResponse(200, snapshot);
         }
         catch (GroupReservationNotFoundException ex)
         {

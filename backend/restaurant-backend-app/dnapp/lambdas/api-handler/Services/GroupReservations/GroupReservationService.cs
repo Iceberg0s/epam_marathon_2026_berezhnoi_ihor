@@ -4,7 +4,6 @@ using APIHandler.Exceptions;
 using APIHandler.Models.GroupReservation;
 using APIHandler.Models.GuestReservation;
 using APIHandler.Repositories.GroupReservations;
-using APIHandler.Repositories.GuestSessions;
 using APIHandler.Repositories.Reservations;
 using APIHandler.Repositories.Tables;
 using APIHandler.Services.Auth;
@@ -18,7 +17,6 @@ public class GroupReservationService(
     IGroupReservationRepository groupReservationRepository,
     ITableRepository tableRepository,
     IReservationRepository reservationRepository,
-    IGuestSessionRepository guestSessionRepository,
     IUserService userService,
     ILocationService locationService) : IGroupReservationService
 {
@@ -33,13 +31,8 @@ public class GroupReservationService(
             throw new GroupReservationExpiredException();
 
         Task<Reservation?> reservationTask = reservationRepository.GetReservationByIdAsync(groupReservation.ReservationId);
-        Task<int> countTask = guestSessionRepository.CountByGroupReservationId(groupReservation.GroupReservationId);
 
         Reservation reservation = await reservationTask ?? throw new ValidationException("Associated reservation not found.");
-        int joinedGuestsCount = await countTask;
-
-        if (joinedGuestsCount + 1 >= reservation.GuestCount)
-            throw new GuestLimitExceededException();
 
         Table table = await tableRepository.GetTableAsync(reservation.TableId)
             ?? throw new InvalidOperationException("Associated table not found.");
@@ -55,6 +48,7 @@ public class GroupReservationService(
         }
         return new GetGroupReservationResponse(
             groupReservation.GroupReservationId,
+            reservation.Id,
             table.LocationId,
             restaurantName,
             address,
@@ -143,4 +137,3 @@ public class GroupReservationService(
         return new GetGroupInviteTokenResponse(groupReservation.ReservationToken);
     }
 }
-

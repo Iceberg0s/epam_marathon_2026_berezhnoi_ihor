@@ -1,5 +1,6 @@
 using APIHandler.Models.GroupReservation;
 using APIHandler.Models.GuestSessions;
+using APIHandler.Entities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -14,6 +15,7 @@ public interface IGuestSessionService
     Task<bool> IsAuthorizedAsync(string guestSessionToken, string guestSessionId);
     Task SubmitCartAsync(string guestSessionId);
     Task<GuestMenuResponse> GetGuestMenuAsync(string guestSessionId);
+    Task<IEnumerable<Dish>> GetOwnerMenuAsync(string userId, string reservationId);
     Task<GetAllSessionsResponse> DeleteGuestSessionAsync(string userId, string groupReservationId, string guestSessionId);
     Task<GetGuestSessionResponse> GetGuestSessionInfoAsync(string guestSessionId);
     Task<GetAllSessionsResponse> GetGroupSessionsAsync(string userId, string groupReservationId);
@@ -21,4 +23,3 @@ public interface IGuestSessionService
     Task<List<SubmittedDishResponse>> SubmitGroupPreOrderAsync(string userId, string groupReservationId, string reservationId);
 
 }
-

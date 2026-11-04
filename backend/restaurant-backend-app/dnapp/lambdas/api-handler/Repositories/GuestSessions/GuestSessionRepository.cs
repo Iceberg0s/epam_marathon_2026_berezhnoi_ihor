@@ -50,17 +50,6 @@ public class GuestSessionRepository(IDynamoDBContext context) : IGuestSessionRep
         OverrideTableName = ResourceNames.GuestSessionTableName
     });
 
-    public async Task<int> CountByGroupReservationId(string groupReservationId)
-    {
-        List<GuestSession> result = await context.QueryAsync<GuestSession>(groupReservationId, new QueryConfig
-        {
-            OverrideTableName = ResourceNames.GuestSessionTableName,
-            IndexName = GlobalSecondaryIndexes.GuestSession.GroupReservationId
-        }).GetRemainingAsync();
-
-        return result.Count;
-    }
-
     public async Task DeleteAsync(GuestSession session)
     {
         await context.DeleteAsync(session, DynamoConfig.DeleteConfig(ResourceNames.GuestSessionTableName));

@@ -1,10 +1,13 @@
 import { Injectable, computed, effect, signal, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { AuthenticationService } from '@app/auth/services/authentication.service';
 import { GuestInviteService } from '@app/services/reservation/guest-invite.service';
 import { GuestInvite } from '@app/models/reservations/guest-invite.model';
 import { GuestMenuDish } from '@app/services/guest-sessions/guest-sessions.service';
 import { GuestSessionsService } from '@app/services/guest-sessions/guest-sessions.service';
+import { GroupOrdersService } from '@app/services/group-orders/group-orders.service';
 
 export type GuestPreorderStatus = 'active' | 'submitted';
 
@@ -30,6 +33,9 @@ export interface GuestCartItem {
 export class GuestPreorderStore {
     private readonly contextId = signal<string | null>(null);
     private readonly guestInviteService = inject(GuestInviteService);
+    private readonly authenticationService = inject(AuthenticationService);
+    private readonly groupOrdersService = inject(GroupOrdersService);
+    private readonly router = inject(Router);
 
     readonly invite = signal<GuestInvite | null>(null);
     readonly inviteLoading = signal(false);
@@ -115,6 +121,26 @@ export class GuestPreorderStore {
 
         try {
             const inv = await firstValueFrom(this.guestInviteService.getInvite$(token));
+            if (inv.ReservationId && this.authenticationService.getTokens()) {
+                try {
+                    await firstValueFrom(
+                        this.groupOrdersService.getOwnerSessionId$(inv.ReservationId, { silent: true }),
+                    );
+                    const navigated = await this.router.navigate([
+                        '/reservations',
+                        inv.ReservationId,
+                        'group-order',
+                    ]);
+                    if (!navigated) {
+                        throw new Error('Could not open the owner group order.');
+                    }
+                    return;
+                } catch (error) {
+                    if (!(error instanceof HttpErrorResponse) || error.status !== 403) {
+                        throw error;
+                    }
+                }
+            }
             this.invite.set(inv);
         } catch (error) {
             this.invite.set(null);

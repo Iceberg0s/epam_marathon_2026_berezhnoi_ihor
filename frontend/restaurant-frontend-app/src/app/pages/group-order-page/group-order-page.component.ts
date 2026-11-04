@@ -3,7 +3,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, forkJoin, interval, merge, of } from 'rxjs';
-import { catchError, exhaustMap, filter, switchMap } from 'rxjs/operators';
+import { catchError, exhaustMap, filter, map, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { GroupOrdersService } from '@app/services/group-orders/group-orders.service';
 import { ToastService } from '@app/services/toast/toast.service';
@@ -115,11 +115,14 @@ export class GroupOrderPageComponent implements OnInit {
         switchMap((invite) => {
           this.invite.set(invite);
           const groupId = invite.GroupReservationId;
-          return forkJoin({
-            sessions: this.groupOrdersService.getSessions$(groupId),
-            ownerId: this.groupOrdersService.getOwnerSessionId$(resId),
-            status: this.groupOrdersService.getStatus$(groupId),
-          });
+          return this.groupOrdersService.getOwnerSessionId$(resId).pipe(
+            switchMap((ownerId) =>
+              forkJoin({
+                sessions: this.groupOrdersService.getSessions$(groupId),
+                status: this.groupOrdersService.getStatus$(groupId),
+              }).pipe(map((data) => ({ ...data, ownerId }))),
+            ),
+          );
         })
       )
       .subscribe({

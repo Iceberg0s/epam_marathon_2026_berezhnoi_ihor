@@ -10,6 +10,7 @@ import { DishSortingLabels, DishTypeLabels } from '@app/shared/mappers/dish-enum
 import { DishModalComponent } from '@app/components/dish-modal/dish-modal.component';
 import { PreOrdersService } from '@app/services/pre-orders/pre-orders.service';
 import {ToastService} from '@app/services/toast/toast.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-menu-page',
@@ -78,25 +79,44 @@ export class MenuPageComponent implements OnInit {
     const category = this.selectedCategory ?? undefined;
     const sort = this.selectedSort;
 
-    this.dishesService.getDishes(category, sort).subscribe((data) => {
-      this.dishes = data.map((dish) => ({
-        ...dish,
-        imageUrl: dish.imageUrl || 'assets/img/dish.png',
-        name: dish.name || 'Unknown Dish',
-        price: dish.price || 0,
-        weight: dish.weight || 'N/A',
-        description: dish.description || 'N/A',
-        state: dish.state || 'N/A',
-        dishType: dish.dishType || 'N/A',
-        calories: dish.calories || '0',
-        proteins: dish.proteins || '0',
-        fats: dish.fats || '0',
-        carbohydrates: dish.carbohydrates || '0',
-        vitamins: dish.vitamins || '0',
-      }));
+    if (this.isPreOrderEnabled && this.preOrderReservationId) {
+      forkJoin({
+        locationDishes: this.dishesService.getDishesForReservation(this.preOrderReservationId),
+        sortedDishes: this.dishesService.getDishes(category, sort),
+      }).subscribe(({ locationDishes, sortedDishes }) => {
+        const locationDishesById = new Map(locationDishes.map((dish) => [dish.id, dish]));
+        this.setDishes(
+          sortedDishes
+            .map((dish) => locationDishesById.get(dish.id))
+            .filter((dish): dish is DishListResponse => dish !== undefined)
+        );
+      });
+      return;
+    }
 
-      this.filteredDishes = this.dishes;
+    this.dishesService.getDishes(category, sort).subscribe((data) => {
+      this.setDishes(data);
     });
+  }
+
+  private setDishes(data: DishListResponse[]): void {
+    this.dishes = data.map((dish) => ({
+      ...dish,
+      imageUrl: dish.imageUrl || 'assets/img/dish.png',
+      name: dish.name || 'Unknown Dish',
+      price: dish.price || 0,
+      weight: dish.weight || 'N/A',
+      description: dish.description || 'N/A',
+      state: dish.state || 'N/A',
+      dishType: dish.dishType || 'N/A',
+      calories: dish.calories || '0',
+      proteins: dish.proteins || '0',
+      fats: dish.fats || '0',
+      carbohydrates: dish.carbohydrates || '0',
+      vitamins: dish.vitamins || '0',
+    }));
+
+    this.filteredDishes = this.dishes;
   }
 
   onCategorySelected(category: DishType): void {

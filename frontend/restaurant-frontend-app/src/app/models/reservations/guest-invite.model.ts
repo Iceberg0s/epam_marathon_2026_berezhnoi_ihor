@@ -1,5 +1,6 @@
 export interface GuestInvite {
   GroupReservationId: string;
+  ReservationId?: string;
   LocationId: string;
   RestaurantName: string;
   LocationAddress: string;

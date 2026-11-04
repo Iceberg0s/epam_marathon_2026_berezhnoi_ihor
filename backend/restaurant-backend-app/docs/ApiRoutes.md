@@ -527,6 +527,11 @@ Response: `200 OK`
 }
 ```
 
+### `GET` /reservations/{reservationId}/dishes
+
+Returns the dishes available at the reservation's location. Requires Cognito
+authentication and is restricted to the reservation owner.
+
 ### `GET` /reservations/{reservationId}/feedback
 Response: `200 OK`
 ```json
@@ -1078,10 +1083,16 @@ Response: `200 OK`
 Response: `200 OK`
 ```json
 {
-  "groupReservationId": "string",
-  "restaurantName": "string",
-  "locationAddress": "string",
-  "startTime": "2026-08-07T19:00:00Z"
+  "GroupReservationId": "string",
+  "ReservationId": "string",
+  "LocationId": "string",
+  "RestaurantName": "Green & Tasty",
+  "LocationAddress": "string",
+  "StartTime": "2026-08-07T19:00:00Z",
+  "EndTime": "2026-08-07T20:00:00Z",
+  "MaxGuestCount": 4,
+  "TableNumber": 3,
+  "InviterName": "string"
 }
 ```
 
@@ -1169,13 +1180,13 @@ Response: 200 OK
 }
 ```
 
-### `GET` /group-reservations/{groupReservationId}/status
+### `GET` /guest/groups/{groupReservationId}/status
 Response: 200 OK
 ```json
 {
-  "status": "string",
-  "totalGuests": 4,
-  "submittedGuests": 3
+  "currentParticipants": 2,
+  "maxCapacity": 4,
+  "status": "Open"
 }
 ```
 
@@ -1190,14 +1201,24 @@ Response: 200 OK
 ### `GET` /guest/groups/{groupReservationId}/sessions
 Response: 200 OK
 ```json
-[
-  {
-    "id": "string",
-    "groupReservationId": "string",
-    "guestName": "string",
-    "status": "string"
-  }
-]
+{
+  "participants": [
+    {
+      "id": "string",
+      "type": "Owner",
+      "name": "string",
+      "items": [
+        {
+          "dish": { "id": "string", "name": "string", "price": 12.00 },
+          "quantity": 1
+        }
+      ],
+      "total": 12.00,
+      "isSubmitted": true
+    }
+  ],
+  "total": 12.00
+}
 ```
 
 ### `DELETE` /guest/groups/{groupReservationId}/sessions/{guestSessionId}

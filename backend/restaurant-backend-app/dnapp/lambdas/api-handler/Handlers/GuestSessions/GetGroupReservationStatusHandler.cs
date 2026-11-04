@@ -20,7 +20,7 @@ public class GetGroupReservationStatusHandler(IGuestSessionService guestSessionS
         try
         {
             var status = await guestSessionService.GetGroupReservationStatusAsync(groupReservationId);
-            return ResponseBuilder.CreateSuccessResponse(status);
+            return ResponseBuilder.CreateJsonResponse(200, status);
         }
         catch (GroupReservationNotFoundException ex)
         {
