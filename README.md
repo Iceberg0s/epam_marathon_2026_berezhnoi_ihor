@@ -93,7 +93,7 @@ dotnet test
 Для AQA-тестів потрібні .NET SDK, доступні frontend і API, а також налаштування тестового середовища. Створіть локальний `.env` на основі `.env.example`, якщо потрібно перевизначити стандартні адреси чи тестові параметри. Не додавайте `.env` з секретами до Git.
 
 ```powershell
-cd aqa\restaurant-aqa-framework
+cd aqa/restaurant-aqa-framework
 dotnet test --logger "html;LogFileName=test-report.html" --results-directory .\TestResults
 ```
 
