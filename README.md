@@ -85,7 +85,7 @@ Backend розгортається в AWS за допомогою AWS Syndicate.
 
 ```powershell
 cd backend\restaurant-backend-app
-dotnet test Tests\APIHandler.Tests.csproj
+dotnet test
 ```
 
 ### API та end-to-end тести
